@@ -73,7 +73,7 @@ const App = () => {
         <div className="flex flex-col items-center mb-8">
           <div className={`w-32 h-32 rounded-full overflow-hidden border-4 shadow-lg mb-6 transition-colors duration-300 ${isDarkMode ? 'border-slate-700' : 'border-white'}`}>
             <img
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Allen&backgroundColor=b6e3f4"
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&mouth=smile&top=longHair&clothing=blazerAndShirt"
               alt="Allen Avatar"
               className="w-full h-full object-cover"
             />
