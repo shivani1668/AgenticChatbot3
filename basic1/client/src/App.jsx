@@ -1,112 +1,169 @@
-import React, { useState } from 'react';
-import { Menu, Send, Mic, MessageSquare, Image as ImageIcon, Mic2, Search } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Menu, Send, MessageSquare, Image as ImageIcon, Mic2 } from 'lucide-react';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('chat');
   const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  // Use the backend URL from environment variables or fallback to localhost
+  const API_URL = import.meta.env.VITE_API_URL || 'https://agenticchatbot3-1.onrender.com';
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  import React, { useState, useEffect, useRef } from 'react';
+import { Menu, Send, MessageSquare, Image as ImageIcon, Mic2 } from 'lucide-react';
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('chat');
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  // Use the backend URL from environment variables or fallback to localhost
+  const API_URL = import.meta.env.VITE_API_URL || 'https://agenticchatbot3-1.onrender.com';
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: input,
+          history: messages.map(m => ({ role: m.role, content: m.content }))
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+    } catch (error) {
+      console.error('Connection Error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I'm having trouble reaching the server. Please check your internet or the backend status."
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col h-screen bg-[#f8fafc] text-[#1e3a5f] font-sans overflow-hidden">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans max-w-md mx-auto shadow-2xl overflow-hidden">
       {/* Header */}
-      <header className="bg-[#1e3a5f] text-white p-4 flex justify-between items-center shadow-md">
-        <Menu size={24} className="cursor-pointer" />
-        <h1 className="text-xl font-semibold">Allen</h1>
-        <button className="bg-[#334155] px-3 py-1 rounded text-xs font-bold tracking-wider">CHAT</button>
+      <header className="p-4 flex items-center justify-between border-b bg-white shadow-sm z-10">
+        <Menu className="w-6 h-6 text-gray-600 cursor-pointer hover:text-gray-900 transition-colors" />
+        <span className="font-bold text-xl tracking-tight text-[#1e3a5f]">Allen CHAT</span>
+        <div className="w-6" />
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
-        {/* Avatar */}
-        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg mb-6">
-          <img
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Allen&backgroundColor=b6e3f4"
-            alt="Allen Avatar"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Speech Bubble */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8 max-w-xs w-full">
-          <h2 className="text-2xl font-bold text-center leading-tight">
-            Good Morning, what task can I do for you?
-          </h2>
-        </div>
-
-        {/* Features Section */}
-        <div className="w-full max-w-sm">
-          <h3 className="text-lg font-bold mb-4 px-2">Here are a few features</h3>
-
-          <div className="space-y-4">
-            {/* Feature 1 */}
-            <div className="bg-[#bae6fd] p-5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-              <h4 className="text-xl font-bold mb-2">Hugging Face Chat</h4>
-              <p className="text-sm text-[#0c4a6e] font-medium leading-relaxed">
-                Powered by Mistral-7B via HF Inference API — ask anything
-              </p>
+      {/* Chat History */}
+      <main className="flex-1 flex flex-col p-4 overflow-y-auto space-y-4 bg-gray-50/50">
+        {messages.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
+            <div className="w-24 h-24 bg-gradient-to-br from-[#7dd3fc] to-[#1e3a5f] rounded-full mb-6 flex items-center justify-center shadow-lg animate-in zoom-in duration-500">
+              <span className="text-white text-4xl font-bold">A</span>
             </div>
-
-            {/* Feature 2 */}
-            <div className="bg-[#7dd3fc] p-5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-              <h4 className="text-xl font-bold mb-2">Image Generation</h4>
-              <p className="text-sm text-[#0c4a6e] font-medium leading-relaxed">
-                Create stunning visuals with Stable Diffusion XL via HF
-              </p>
+            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 max-w-xs animate-in slide-in-from-left duration-500">
+              <p className="text-gray-700">Good Morning, I am Allen. What task can I do for you today?</p>
             </div>
           </div>
-        </div>
+        ) : (
+          messages.map((msg, idx) => (
+            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
+              <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm ${
+                msg.role === 'user'
+                ? 'bg-[#1e3a5f] text-white rounded-tr-none'
+                : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+              }`}>
+                <p className="text-sm leading-relaxed">{msg.content}</p>
+              </div>
+            </div>
+          ))
+        )}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-white border border-gray-100 p-3 rounded-2xl rounded-tl-none text-gray-500 text-xs flex items-center gap-2 shadow-sm">
+              <div className="flex gap-1">
+                <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></span>
+                <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+              </div>
+              Allen is thinking...
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </main>
 
       {/* Footer / Navigation */}
-      <footer className="p-4 bg-white border-t border-gray-100">
-        {/* Tab Buttons */}
-        <div className="flex justify-between gap-2 mb-4 max-w-sm mx-auto">
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold transition-colors ${
-              activeTab === 'chat' ? 'bg-[#1e3a5f] text-white' : 'bg-white border border-gray-200 text-gray-500'
-            }`}
-          >
-            <MessageSquare size={18} />
-            <span>Chat</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('image')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold transition-colors ${
-              activeTab === 'image' ? 'bg-[#1e3a5f] text-white' : 'bg-white border border-gray-200 text-gray-500'
-            }`}
-          >
-            <ImageIcon size={18} />
-            <span>Image</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('voice')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold transition-colors ${
-              activeTab === 'voice' ? 'bg-[#1e3a5f] text-white' : 'bg-white border border-gray-200 text-gray-500'
-            }`}
-          >
-            <Mic2 size={18} />
-            <span>Voice</span>
-          </button>
+      <footer className="p-4 bg-white border-t space-y-4">
+        <div className="flex gap-2">
+          {['chat', 'image', 'voice'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl font-bold transition-all duration-200 ${
+                activeTab === tab
+                ? 'bg-[#1e3a5f] text-white shadow-lg scale-[1.02]'
+                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              {tab === 'chat' && <MessageSquare className="w-4 h-4" />}
+              {tab === 'image' && <ImageIcon className="w-4 h-4" />}
+              {tab === 'voice' && <Mic2 className="w-4 h-4" />}
+              <span className="text-xs">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Search Input Area */}
-        <div className="flex items-center gap-3 max-w-sm mx-auto">
-          <div className="bg-[#e0f2fe] p-3 rounded-full text-[#1e3a5f] cursor-pointer">
-            <Mic size={24} />
-          </div>
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Allen anything..."
-              className="w-full bg-white border border-gray-200 rounded-full py-3 px-6 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#7dd3fc] shadow-sm"
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#1e3a5f] p-2 rounded-full text-white cursor-pointer">
-              <Send size={18} />
-            </div>
-          </div>
+        <div className="relative group">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            placeholder={activeTab === 'chat' ? "Ask Allen anything..." : `Use ${activeTab} feature...`}
+            className="w-full bg-gray-50 border border-gray-200 rounded-full py-3 px-6 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-[#7dd3fc] focus:bg-white transition-all shadow-inner"
+          />
+          <button
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+            className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-white transition-all transform active:scale-95 ${
+              isLoading || !input.trim() ? 'bg-gray-300' : 'bg-[#1e3a5f] hover:bg-[#2a5288] shadow-md'
+            }`}
+          >
+            <Send className="w-4 h-4" />
+          </button>
         </div>
+        <p className="text-[10px] text-center text-gray-400">Powered by Robotics Club Assistant • AI can make mistakes</p>
       </footer>
     </div>
   );
