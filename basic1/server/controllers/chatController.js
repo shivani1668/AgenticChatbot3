@@ -20,14 +20,13 @@ export const handleChat = async (req, res) => {
     const model = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
       modelName: "llama-3.1-8b-instant",
-      temperature: 0.7,
+      temperature: 0.1, // Lowered temperature to stop hallucinations
     });
 
-    // Define Tools
     const tools = [
       new DynamicTool({
-        name: "document_search",
-        description: "Search technical documents and club rules. Input: a search query string.",
+        name: "general_search", // Renamed to capture more general queries
+        description: "Search technical documents, club rules, and general definitions. Input: a search query string.",
         func: async (query) => await searchDocuments(query),
       }),
       new DynamicTool({
@@ -56,7 +55,7 @@ export const handleChat = async (req, res) => {
     ];
 
     const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are the Robotics Club Assistant. Use tools to find info. IMPORTANT: If a tool description says it takes NO input, you must call it with NO arguments. Be technical and precise."],
+      ["system", "You are the Robotics Club Assistant. You must ONLY use the tools provided to you. NEVER attempt to use tools that are not in your list (like brave_search or google_search). If you cannot find info using your tools, answer based on your general knowledge. If a tool takes NO input, call it with no arguments."],
       new MessagesPlaceholder("chat_history"),
       ["human", "{input}"],
       new MessagesPlaceholder("agent_scratchpad"),
@@ -74,7 +73,6 @@ export const handleChat = async (req, res) => {
       verbose: true,
     });
 
-    // FIXED: Properly format history for LangChain using object initialization
     const chatHistory = (history || [])
       .filter(msg => msg.content && msg.content.trim() !== "")
       .map(msg => 
