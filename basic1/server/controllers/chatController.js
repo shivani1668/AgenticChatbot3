@@ -15,7 +15,7 @@ export const handleChat = async (req, res) => {
 
     const model = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
-      modelName: "llama3-8b-8192",
+      modelName: "llama-3.3-70b-versatile",
       temperature: 0.7,
     });
 
