@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Send, MessageSquare, Image as ImageIcon, Mic2 } from 'lucide-react';
+import { Menu, Send, MessageSquare, Search, Settings, Globe, Database, Share2, Mail, FileText, Calendar, TrendingUp, Sparkles, Terminal, Sun, Moon } from 'lucide-react';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('chat');
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: 'Hello! I am your Robotics Club Agentic Assistant. I can help with RAG search, Neo4j graphs, and Google service tasks. How can I assist you today?' }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const messagesEndRef = useRef(null);
-
-  const API_URL = import.meta.env.VITE_API_URL || 'https://agenticchatbot3-1.onrender.com';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -16,127 +17,164 @@ const App = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
 
-    const userMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+  const handleSend = async (text) => {
+    const messageToSend = text || input;
+    if (!messageToSend.trim()) return;
+
+    const newMessages = [...messages, { role: 'user', content: messageToSend }];
+    setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/chat`, {
+      const response = await fetch('http://localhost:5000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: input,
-          history: messages.map(m => ({ role: m.role, content: m.content }))
-        }),
+        body: JSON.stringify({ message: messageToSend, history: newMessages.slice(0, -1) }),
       });
-
-      if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
     } catch (error) {
-      console.error('Connection Error:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "I'm having trouble reaching the server. Please check your internet or the backend status."
-      }]);
+      console.error('Error sending message:', error);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error connecting to the server.' }]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const features = [
+    { title: "GPT-based Q&A", tool: "LangChain + Groq (Llama 3)", icon: <MessageSquare size={20} />, color: "bg-blue-100", darkColor: "bg-blue-900/30", desc: "Fast & Free inference via Groq Cloud" },
+    { title: "Document search (RAG)", tool: "MongoDB Atlas + HF Embeddings", icon: <Database size={20} />, color: "bg-green-100", darkColor: "bg-green-900/30", desc: "Context-aware retrieval from your docs" },
+    { title: "Context with graphs", tool: "Neo4j Aura (Free Tier)", icon: <Share2 size={20} />, color: "bg-purple-100", darkColor: "bg-purple-900/30", desc: "Member & project mapping models" },
+    { title: "Agentic planning", tool: "LangGraph / AgentExecutor", icon: <Globe size={20} />, color: "bg-orange-100", darkColor: "bg-orange-900/30", desc: "Multi-step tool execution logic" },
+    { title: "Email & Forms", tool: "Gmail & Forms API", icon: <Mail size={20} />, color: "bg-red-100", darkColor: "bg-red-900/30", desc: "Automated club notifications" },
+    { title: "Google Drive", tool: "Drive API Integration", icon: <FileText size={20} />, color: "bg-yellow-100", darkColor: "bg-yellow-900/30", desc: "Retrieve technical documents" },
+    { title: "Task Tracking", tool: "Pandas & Neo4j", icon: <TrendingUp size={20} />, color: "bg-indigo-100", darkColor: "bg-indigo-900/30", desc: "Skill mapping & performance logs" },
+    { title: "Event Management", tool: "JSON Storage", icon: <Calendar size={20} />, color: "bg-pink-100", darkColor: "bg-pink-900/30", desc: "Reminders & evaluation workflows" },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans max-w-md mx-auto shadow-2xl overflow-hidden">
-      <header className="p-4 flex items-center justify-between border-b bg-white shadow-sm z-10">
-        <Menu className="w-6 h-6 text-gray-600 cursor-pointer hover:text-gray-900 transition-colors" />
-        <span className="font-bold text-xl tracking-tight text-[#1e3a5f]">Allen CHAT</span>
-        <div className="w-6" />
+    <div className={`flex flex-col h-screen font-sans overflow-hidden transition-colors duration-300 ${isDarkMode ? 'bg-[#0f172a] text-slate-200' : 'bg-[#f8fafc] text-[#1e293b]'}`}>
+      {/* Header */}
+      <header className={`${isDarkMode ? 'bg-[#1e293b]' : 'bg-[#0f172a]'} text-white p-4 flex justify-between items-center shadow-lg z-10 transition-colors duration-300`}>
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-600 p-2 rounded-lg">
+            <Terminal size={20} />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">Robotics Club Agent v3</h1>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-gray-300'} font-bold uppercase tracking-widest`}>Free Tier Engine</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={toggleDarkMode}
+            className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-yellow-400' : 'hover:bg-slate-800 text-slate-300'}`}
+          >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+          <button className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-800 text-slate-300'}`}>
+            <Settings size={20} />
+          </button>
+        </div>
       </header>
 
-      <main className="flex-1 flex flex-col p-4 overflow-y-auto space-y-4 bg-gray-50/50">
-        {messages.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
-            <div className="w-24 h-24 bg-gradient-to-br from-[#7dd3fc] to-[#1e3a5f] rounded-full mb-6 flex items-center justify-center shadow-lg">
-              <span className="text-white text-4xl font-bold">A</span>
-            </div>
-            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 max-w-xs">
-              <p className="text-gray-700">Good Morning, I am Allen. What task can I do for you today?</p>
+      {/* Main Content */}
+      <main className={`flex-1 overflow-y-auto p-4 flex flex-col transition-colors duration-300 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
+        {activeTab === 'chat' ? (
+          <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+            <div className="flex-1 space-y-4 mb-4">
+              {messages.map((msg, index) => (
+                <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm transition-colors duration-300 ${
+                    msg.role === 'user'
+                      ? 'bg-blue-600 text-white rounded-tr-none'
+                      : (isDarkMode ? 'bg-[#1e293b] border border-slate-700 text-slate-200 rounded-tl-none' : 'bg-white border border-gray-200 text-[#1e293b] rounded-tl-none')
+                  }`}>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className={`flex items-center gap-2 text-xs italic ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
+                  <Sparkles size={14} className="animate-spin text-blue-500" />
+                  Agent is processing...
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
           </div>
         ) : (
-          messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm ${
-                msg.role === 'user'
-                  ? 'bg-[#1e3a5f] text-white rounded-tr-none'
-                  : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
-              }`}>
-                <p className="text-sm leading-relaxed">{msg.content}</p>
+          <div className="max-w-5xl mx-auto w-full py-6">
+            <div className={`rounded-3xl p-8 shadow-sm border transition-colors duration-300 ${isDarkMode ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-gray-100'}`}>
+              <h2 className={`text-2xl font-black mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Integrated Features & Tools</h2>
+              <p className={`mb-8 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>System configuration based on your requirements (All Free-Tier)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                {features.map((f, i) => (
+                  <div key={i} className={`flex items-start gap-4 p-5 rounded-2xl border transition-all group ${isDarkMode ? 'border-slate-800 hover:bg-[#253247]' : 'border-gray-50 hover:bg-slate-50'}`}>
+                    <div className={`${isDarkMode ? f.darkColor : f.color} p-4 rounded-xl group-hover:scale-110 transition-transform ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{f.icon}</div>
+                    <div>
+                      <h3 className={`font-bold ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>{f.title}</h3>
+                      <p className={`text-xs font-bold mb-1 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{f.tool}</p>
+                      <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))
-        )}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-gray-100 p-3 rounded-2xl rounded-tl-none text-gray-500 text-xs flex items-center gap-2 shadow-sm">
-              <div className="flex gap-1">
-                <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></span>
-                <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-              </div>
-              Allen is thinking...
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </main>
 
-      <footer className="p-4 bg-white border-t space-y-4">
-        <div className="flex gap-2">
-          {['chat', 'image', 'voice'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl font-bold transition-all duration-200 ${
-                activeTab === tab
-                  ? 'bg-[#1e3a5f] text-white shadow-lg scale-[1.02]'
-                  : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              {tab === 'chat' && <MessageSquare className="w-4 h-4" />}
-              {tab === 'image' && <ImageIcon className="w-4 h-4" />}
-              {tab === 'voice' && <Mic2 className="w-4 h-4" />}
-              <span className="text-xs">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
-            </button>
-          ))}
-        </div>
+      {/* Footer Navigation & Input */}
+      <footer className={`border-t transition-colors duration-300 p-4 ${isDarkMode ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className="max-w-4xl mx-auto">
+          {activeTab === 'chat' && (
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Ask the Agent about club docs, members, or tasks..."
+                className={`flex-1 border-none rounded-xl py-3 px-6 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors duration-300 ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-gray-900'}`}
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={isLoading || !input.trim()}
+                className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md active:scale-95"
+              >
+                <Send size={20} />
+              </button>
+            </div>
+          )}
 
-        <div className="relative group">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={activeTab === 'chat' ? "Ask Allen anything..." : `Use ${activeTab} feature...`}
-            className="w-full bg-gray-50 border border-gray-200 rounded-full py-3 px-6 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-[#7dd3fc] focus:bg-white transition-all shadow-inner"
-          />
-          <button
-            onClick={handleSend}
-            disabled={isLoading || !input.trim()}
-            className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-white transition-all transform active:scale-95 ${
-              isLoading || !input.trim() ? 'bg-gray-300' : 'bg-[#1e3a5f] hover:bg-[#2a5288] shadow-md'
-            }`}
-          >
-            <Send className="w-4 h-4" />
-          </button>
+          <div className={`flex justify-center items-center gap-12 border-t pt-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-100'}`}>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'chat' ? 'text-blue-500' : (isDarkMode ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600')}`}
+            >
+              <MessageSquare size={22} />
+              <span className="text-[10px] font-bold uppercase tracking-tighter">Chat Agent</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('features')}
+              className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'features' ? 'text-blue-500' : (isDarkMode ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600')}`}
+            >
+              <TrendingUp size={22} />
+              <span className="text-[10px] font-bold uppercase tracking-tighter">System Features</span>
+            </button>
+          </div>
         </div>
-        <p className="text-[10px] text-center text-gray-400">Powered by Robotics Club Assistant • AI can make mistakes</p>
       </footer>
     </div>
   );
