@@ -1,5 +1,5 @@
 import { ChatGroq } from "@langchain/groq";
-import { Message } from "../models/Message.js";
+import Message from "../models/Message.js"; // FIXED: Removed curly braces for default export
 import { DynamicTool } from "@langchain/core/tools";
 import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
@@ -20,7 +20,7 @@ export const handleChat = async (req, res) => {
     // Initialize Groq model with a SUPPORTED model name
     const model = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
-      modelName: "llama-3.1-8b-instant", // FIXED: Updated from decommissioned llama3-8b-8192
+      modelName: "llama-3.1-8b-instant",
       temperature: 0.7,
     });
 
