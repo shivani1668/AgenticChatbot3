@@ -1,5 +1,5 @@
 import { ChatGroq } from "@langchain/groq";
-import Message from "../models/Message.js"; // FIXED: Removed curly braces for default export
+import Message from "../models/Message.js";
 import { DynamicTool } from "@langchain/core/tools";
 import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
@@ -17,38 +17,37 @@ export const handleChat = async (req, res) => {
     // Save user message to MongoDB
     await Message.create({ role: 'user', content: message });
 
-    // Initialize Groq model with a SUPPORTED model name
     const model = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
       modelName: "llama-3.1-8b-instant",
       temperature: 0.7,
     });
 
-    // Define Tools
+    // Define Tools - FIXED: Added clearer descriptions to prevent Groq calling errors
     const tools = [
       new DynamicTool({
         name: "document_search",
-        description: "Search technical documents and club rules. Use this for specific club info.",
+        description: "Search technical documents and club rules. Input: a search query string.",
         func: async (query) => await searchDocuments(query),
       }),
       new DynamicTool({
         name: "member_context",
-        description: "Fetch member skills, project history, and relationships from Neo4j.",
-        func: async (userId) => await getMemberContext(userId),
+        description: "Fetch member skills and project history. Input: a member name or ID.",
+        func: async (input) => await getMemberContext(input),
       }),
       new DynamicTool({
         name: "send_email",
-        description: "Send emails via Gmail API. Input: { to, subject, body }",
+        description: "Send emails via Gmail. Input: a JSON string with to, subject, and body.",
         func: async (input) => await sendEmail(input),
       }),
       new DynamicTool({
         name: "google_drive_files",
-        description: "List or find files in Google Drive.",
-        func: async () => await listDriveFiles(),
+        description: "List files in Google Drive. This tool takes NO input. Do not provide any arguments.",
+        func: async () => await listDriveFiles(), 
       }),
       new DynamicTool({
         name: "event_reminders",
-        description: "Get upcoming club events from events.json",
+        description: "Get upcoming club events. This tool takes NO input. Do not provide any arguments.",
         func: async () => {
           const events = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'events.json'), 'utf8'));
           return JSON.stringify(events);
@@ -56,15 +55,13 @@ export const handleChat = async (req, res) => {
       }),
     ];
 
-    // Define Prompt
     const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are the Robotics Club Assistant, an expert in club rules, member skills, and technical projects. Always use the available tools to find information before answering. Be technical and precise."],
+      ["system", "You are the Robotics Club Assistant. Use tools to find info. IMPORTANT: If a tool description says it takes NO input, you must call it with an empty object or no arguments. Be technical and precise."],
       new MessagesPlaceholder("chat_history"),
       ["human", "{input}"],
       new MessagesPlaceholder("agent_scratchpad"),
     ]);
 
-    // Create Agent
     const agent = await createOpenAIToolsAgent({
       llm: model,
       tools,
@@ -77,7 +74,6 @@ export const handleChat = async (req, res) => {
       verbose: true,
     });
 
-    // Format history for LangChain
     const chatHistory = (history || []).map(msg => 
       msg.role === 'user' ? new HumanMessage(msg.content) : new AIMessage(msg.content)
     );
@@ -87,7 +83,6 @@ export const handleChat = async (req, res) => {
       chat_history: chatHistory,
     });
 
-    // Save assistant reply to MongoDB
     await Message.create({ role: 'assistant', content: result.output });
 
     res.json({ reply: result.output });
