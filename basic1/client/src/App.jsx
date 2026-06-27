@@ -8,28 +8,6 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Use the backend URL from environment variables or fallback to localhost
-  const API_URL = import.meta.env.VITE_API_URL || 'https://agenticchatbot3-1.onrender.com';
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
-
-  import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Send, MessageSquare, Image as ImageIcon, Mic2 } from 'lucide-react';
-
-const App = () => {
-  const [activeTab, setActiveTab] = useState('chat');
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-
-  // Use the backend URL from environment variables or fallback to localhost
   const API_URL = import.meta.env.VITE_API_URL || 'https://agenticchatbot3-1.onrender.com';
 
   const scrollToBottom = () => {
@@ -58,9 +36,7 @@ const App = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Server responded with ${response.status}`);
 
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
@@ -77,31 +53,29 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans max-w-md mx-auto shadow-2xl overflow-hidden">
-      {/* Header */}
       <header className="p-4 flex items-center justify-between border-b bg-white shadow-sm z-10">
         <Menu className="w-6 h-6 text-gray-600 cursor-pointer hover:text-gray-900 transition-colors" />
         <span className="font-bold text-xl tracking-tight text-[#1e3a5f]">Allen CHAT</span>
         <div className="w-6" />
       </header>
 
-      {/* Chat History */}
       <main className="flex-1 flex flex-col p-4 overflow-y-auto space-y-4 bg-gray-50/50">
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
-            <div className="w-24 h-24 bg-gradient-to-br from-[#7dd3fc] to-[#1e3a5f] rounded-full mb-6 flex items-center justify-center shadow-lg animate-in zoom-in duration-500">
+            <div className="w-24 h-24 bg-gradient-to-br from-[#7dd3fc] to-[#1e3a5f] rounded-full mb-6 flex items-center justify-center shadow-lg">
               <span className="text-white text-4xl font-bold">A</span>
             </div>
-            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 max-w-xs animate-in slide-in-from-left duration-500">
+            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 max-w-xs">
               <p className="text-gray-700">Good Morning, I am Allen. What task can I do for you today?</p>
             </div>
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
+            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm ${
                 msg.role === 'user'
-                ? 'bg-[#1e3a5f] text-white rounded-tr-none'
-                : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                  ? 'bg-[#1e3a5f] text-white rounded-tr-none'
+                  : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
               }`}>
                 <p className="text-sm leading-relaxed">{msg.content}</p>
               </div>
@@ -123,7 +97,6 @@ const App = () => {
         <div ref={messagesEndRef} />
       </main>
 
-      {/* Footer / Navigation */}
       <footer className="p-4 bg-white border-t space-y-4">
         <div className="flex gap-2">
           {['chat', 'image', 'voice'].map((tab) => (
@@ -132,8 +105,8 @@ const App = () => {
               onClick={() => setActiveTab(tab)}
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl font-bold transition-all duration-200 ${
                 activeTab === tab
-                ? 'bg-[#1e3a5f] text-white shadow-lg scale-[1.02]'
-                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                  ? 'bg-[#1e3a5f] text-white shadow-lg scale-[1.02]'
+                  : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
               }`}
             >
               {tab === 'chat' && <MessageSquare className="w-4 h-4" />}
