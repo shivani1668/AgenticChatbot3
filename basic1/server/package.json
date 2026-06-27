@@ -19,6 +19,7 @@
     "@langchain/langgraph": "^0.0.12",
     "@huggingface/inference": "^2.7.0",
     "openai": "^4.47.1",
+    "@langchain/openai": "^0.0.34",
     "langchain": "^0.2.5",
     "mongodb": "^6.7.0",
     "neo4j-driver": "^5.21.0",
