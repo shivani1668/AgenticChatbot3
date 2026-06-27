@@ -73,7 +73,7 @@ const App = () => {
         <div className="flex flex-col items-center mb-8">
           <div className={`w-32 h-32 rounded-full overflow-hidden border-4 shadow-lg mb-6 transition-colors duration-300 ${isDarkMode ? 'border-slate-700' : 'border-white'}`}>
             <img
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Annie&clothing=blazerAndShirt&top=longHair"
+              src="https://img.freepik.com/premium-vector/female-customer-support-operator-with-headset-avatar_543062-536.jpg"
               alt="Allen Avatar"
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -169,3 +169,4 @@ const App = () => {
 };
 
 export default App;
+
