@@ -16,6 +16,11 @@ app.use(express.json());
 import chatRoutes from './routes/chat.js';
 app.use('/api/chat', chatRoutes);
 
+// Health Check for Render
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Basic Route
 app.get('/', (req, res) => {
   res.send('Robotics Club Chatbot API is running...');
@@ -25,17 +30,22 @@ app.get('/', (req, res) => {
 const connectDB = async () => {
   try {
     if (process.env.MONGODB_URI) {
-      await mongoose.connect(process.env.MONGODB_URI);
+      console.log('Attempting to connect to MongoDB...');
+      await mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000 // 5 seconds timeout
+      });
       console.log('MongoDB Connected');
     } else {
       console.warn('MONGODB_URI not found in environment variables. Database connection skipped.');
     }
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
+    // Don't exit process, let the server run so Render can detect the port
   }
 };
 
-app.listen(PORT, () => {
+// Bind to 0.0.0.0 for Render
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   connectDB();
 });
