@@ -20,12 +20,12 @@ export const handleChat = async (req, res) => {
     const model = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
       modelName: "llama-3.1-8b-instant",
-      temperature: 0.1, // Lowered temperature to stop hallucinations
+      temperature: 0.1,
     });
 
     const tools = [
       new DynamicTool({
-        name: "general_search", // Renamed to capture more general queries
+        name: "general_search",
         description: "Search technical documents, club rules, and general definitions. Input: a search query string.",
         func: async (query) => await searchDocuments(query),
       }),
@@ -55,7 +55,7 @@ export const handleChat = async (req, res) => {
     ];
 
     const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are the Robotics Club Assistant. You must ONLY use the tools provided to you. NEVER attempt to use tools that are not in your list (like brave_search or google_search). If you cannot find info using your tools, answer based on your general knowledge. If a tool takes NO input, call it with no arguments."],
+      ["system", "You are the Robotics Club Assistant. Your ONLY goal is to provide helpful, natural language answers in plain text. \n\n1. Use tools ONLY if necessary to find specific information.\n2. NEVER show raw tool calls, JSON, or tags like <function> or <general_search> to the user.\n3. After using a tool, take the result and write a friendly, human-like response.\n4. If you don't need a tool, just answer normally using your knowledge."],
       new MessagesPlaceholder("chat_history"),
       ["human", "{input}"],
       new MessagesPlaceholder("agent_scratchpad"),
@@ -70,11 +70,12 @@ export const handleChat = async (req, res) => {
     const executor = new AgentExecutor({
       agent,
       tools,
-      verbose: true,
+      verbose: false, 
     });
 
+    // Clean history of any previous "raw tool calls" or tags to ensure the model doesn't copy them
     const chatHistory = (history || [])
-      .filter(msg => msg.content && msg.content.trim() !== "")
+      .filter(msg => msg.content && msg.content.trim() !== "" && !msg.content.includes("<"))
       .map(msg => 
         msg.role === 'user' 
           ? new HumanMessage({ content: msg.content }) 
