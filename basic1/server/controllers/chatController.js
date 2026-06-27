@@ -23,7 +23,7 @@ export const handleChat = async (req, res) => {
       temperature: 0.7,
     });
 
-    // Define Tools - FIXED: Added clearer descriptions to prevent Groq calling errors
+    // Define Tools
     const tools = [
       new DynamicTool({
         name: "document_search",
@@ -56,7 +56,7 @@ export const handleChat = async (req, res) => {
     ];
 
     const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are the Robotics Club Assistant. Use tools to find info. IMPORTANT: If a tool description says it takes NO input, you must call it with an empty object or no arguments. Be technical and precise."],
+      ["system", "You are the Robotics Club Assistant. Use tools to find info. IMPORTANT: If a tool description says it takes NO input, you must call it with NO arguments. Be technical and precise."],
       new MessagesPlaceholder("chat_history"),
       ["human", "{input}"],
       new MessagesPlaceholder("agent_scratchpad"),
@@ -74,15 +74,21 @@ export const handleChat = async (req, res) => {
       verbose: true,
     });
 
-    const chatHistory = (history || []).map(msg => 
-      msg.role === 'user' ? new HumanMessage(msg.content) : new AIMessage(msg.content)
-    );
+    // FIXED: Properly format history for LangChain using object initialization
+    const chatHistory = (history || [])
+      .filter(msg => msg.content && msg.content.trim() !== "")
+      .map(msg => 
+        msg.role === 'user' 
+          ? new HumanMessage({ content: msg.content }) 
+          : new AIMessage({ content: msg.content })
+      );
 
     const result = await executor.invoke({
       input: message,
       chat_history: chatHistory,
     });
 
+    // Save assistant reply to MongoDB
     await Message.create({ role: 'assistant', content: result.output });
 
     res.json({ reply: result.output });
