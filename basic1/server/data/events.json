@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "name": "RoboCon 2024",
+    "date": "2024-11-15",
+    "description": "Annual robotics competition and showcase."
+  },
+  {
+    "id": 2,
+    "name": "Arduino Workshop",
+    "date": "2024-10-05",
+    "description": "Introduction to microcontrollers for new members."
+  }
+]
