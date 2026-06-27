@@ -1,0 +1,28 @@
+{
+  "name": "robotics-chatbot-server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mongoose": "^8.4.1",
+    "dotenv": "^16.4.5",
+    "cors": "^2.8.5",
+    "@langchain/groq": "^0.0.15",
+    "@langchain/core": "^0.2.0",
+    "@langchain/community": "^0.2.0",
+    "@langchain/mongodb": "^0.0.1",
+    "@langchain/langgraph": "^0.0.12",
+    "langchain": "^0.2.5",
+    "mongodb": "^6.7.0",
+    "neo4j-driver": "^5.21.0",
+    "googleapis": "^140.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.2"
+  }
+}
