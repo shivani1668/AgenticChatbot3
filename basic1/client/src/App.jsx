@@ -76,6 +76,9 @@ const App = () => {
               src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&mouth=smile&top=longHair&clothing=blazerAndShirt"
               alt="Allen Avatar"
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = "https://api.dicebear.com/7.x/avataaars/svg?seed=Sara";
+              }}
             />
           </div>
 
