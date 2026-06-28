@@ -21,7 +21,7 @@ const ChatWindow = () => {
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleSend = async (e) => {
     e?.preventDefault();
