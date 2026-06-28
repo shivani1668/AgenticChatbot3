@@ -17,6 +17,7 @@ const Sidebar = () => {
     sidebarOpen,
     setSidebarOpen,
     isDarkMode,
+    isLoading, // Added isLoading to fix ReferenceError
     toggleDarkMode,
     setRightPanelOpen
   } = useChatStore();
