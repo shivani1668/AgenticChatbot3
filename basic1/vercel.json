@@ -1,14 +1,9 @@
 {
-  "version": 2,
-  "public": true,
+  "buildCommand": "npm install --prefix client --legacy-peer-deps && npm run build --prefix client",
+  "outputDirectory": "client/dist",
+  "framework": "vite",
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "http://your-backend-url.com/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/client/$1"
-    }
+    { "source": "/api/(.*)", "destination": "https://robotics-club-backend.onrender.com/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
