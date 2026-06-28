@@ -1,61 +1,92 @@
 import { ChatGroq } from "@langchain/groq";
-import Message from "../models/Message.js";
 import { DynamicTool } from "@langchain/core/tools";
 import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
-import { searchDocuments } from "../mcp/rag_tool.js";
-import { getMemberContext } from "../mcp/graph_tool.js";
-import { sendEmail, listDriveFiles } from "../mcp/google_services.js";
-import fs from 'fs';
+import Message from '../models/Message.js';
+import Conversation from '../models/Conversation.js';
+import * as ragTool from '../mcp/rag_tool.js';
+import * as graphTool from '../mcp/graph_tool.js';
+import * as googleServices from '../mcp/google_services.js';
+import fs from 'fs/promises';
 import path from 'path';
 
 export const handleChat = async (req, res) => {
-  const { message, history } = req.body;
+  const { id: conversationId } = req.params;
+  const { content: message } = req.body;
 
   try {
-    // Save user message to MongoDB
-    await Message.create({ role: 'user', content: message });
+    // 1. Get Conversation and history
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
+
+    const prevMessages = await Message.find({ conversationId }).sort({ createdAt: 1 }).limit(10);
+    const history = prevMessages.map(msg =>
+      msg.role === 'user' ? new HumanMessage(msg.content) : new AIMessage(msg.content)
+    );
+
+    // 2. Save user message to DB
+    const userMsg = await Message.create({ conversationId, role: 'user', content: message });
+
+    // Use Groq (Free Tier) with Llama 3
+    if (!process.env.GROQ_API_KEY) {
+      return res.status(500).json({ error: 'GROQ_API_KEY is not configured' });
+    }
 
     const model = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
-      modelName: "llama-3.1-8b-instant",
-      temperature: 0.1,
+      modelName: "llama3-8b-8192",
+      temperature: 0.7,
     });
 
+    // 3. Define Tools
     const tools = [
       new DynamicTool({
-        name: "general_search",
-        description: "Search technical documents, club rules, and general definitions. Input: a search query string.",
-        func: async (query) => await searchDocuments(query),
+        name: "document_search",
+        description: "Search for technical documents and club rules using RAG.",
+        func: async (query) => await ragTool.searchDocuments(query),
       }),
       new DynamicTool({
         name: "member_context",
-        description: "Fetch member skills and project history. Input: a member name or ID.",
-        func: async (input) => await getMemberContext(input),
+        description: "Get member skills and relationships from the graph database. Input is member email.",
+        func: async (email) => JSON.stringify(await graphTool.getMemberContext(email)),
       }),
       new DynamicTool({
         name: "send_email",
-        description: "Send emails via Gmail. Input: a JSON string with to, subject, and body.",
-        func: async (input) => await sendEmail(input),
+        description: "Send email notifications via Gmail. Input: JSON {to, subject, body}.",
+        func: async (input) => {
+          try {
+            const { to, subject, body } = JSON.parse(input);
+            await googleServices.sendEmail(to, subject, body);
+            return "Email sent successfully";
+          } catch (e) {
+            return `Email failed: ${e.message}`;
+          }
+        },
       }),
       new DynamicTool({
         name: "google_drive_files",
-        description: "List files in Google Drive. This tool takes NO input. Do not provide any arguments.",
-        func: async () => await listDriveFiles(), 
+        description: "List files from Google Drive.",
+        func: async () => JSON.stringify(await googleServices.listDriveFiles()),
       }),
       new DynamicTool({
         name: "event_reminders",
-        description: "Get upcoming club events. This tool takes NO input. Do not provide any arguments.",
+        description: "Get upcoming robotics club events from the system storage.",
         func: async () => {
-          const events = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'events.json'), 'utf8'));
-          return JSON.stringify(events);
-        },
-      }),
+          try {
+            const data = await fs.readFile(path.resolve('data/events.json'), 'utf-8');
+            return data;
+          } catch (e) {
+            return "No upcoming events found.";
+          }
+        }
+      })
     ];
 
+    // 4. Create Agent
     const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are the Robotics Club Assistant. Your ONLY goal is to provide helpful, natural language answers in plain text. \n\n1. Use tools ONLY if necessary to find specific information.\n2. NEVER show raw tool calls, JSON, or tags like <function> or <general_search> to the user.\n3. After using a tool, take the result and write a friendly, human-like response.\n4. If you don't need a tool, just answer normally using your knowledge."],
+      ["system", "You are the Robotics Club Assistant. You use free-tier tools (Groq, MongoDB RAG, Neo4j, Google APIs) to help members. " +
+                 "Always use the available tools to find information before answering. Be technical and precise."],
       new MessagesPlaceholder("chat_history"),
       ["human", "{input}"],
       new MessagesPlaceholder("agent_scratchpad"),
@@ -67,32 +98,25 @@ export const handleChat = async (req, res) => {
       prompt,
     });
 
-    const executor = new AgentExecutor({
+    const agentExecutor = new AgentExecutor({
       agent,
       tools,
-      verbose: false, 
     });
 
-    // Clean history of any previous "raw tool calls" or tags to ensure the model doesn't copy them
-    const chatHistory = (history || [])
-      .filter(msg => msg.content && msg.content.trim() !== "" && !msg.content.includes("<"))
-      .map(msg => 
-        msg.role === 'user' 
-          ? new HumanMessage({ content: msg.content }) 
-          : new AIMessage({ content: msg.content })
-      );
-
-    const result = await executor.invoke({
+    const result = await agentExecutor.invoke({
       input: message,
-      chat_history: chatHistory,
+      chat_history: history,
     });
 
-    // Save assistant reply to MongoDB
-    await Message.create({ role: 'assistant', content: result.output });
+    // 5. Save assistant response to DB
+    const assistantMsg = await Message.create({ conversationId, role: 'assistant', content: result.output });
 
-    res.json({ reply: result.output });
+    // Update conversation timestamp
+    await Conversation.findByIdAndUpdate(conversationId, { updatedAt: Date.now() });
+
+    res.json(assistantMsg);
   } catch (error) {
-    console.error("Chat Error:", error);
-    res.status(500).json({ error: "Something went wrong in the agentic loop." });
+    console.error('Chat Error:', error);
+    res.status(500).json({ error: 'Agent execution failed' });
   }
 };

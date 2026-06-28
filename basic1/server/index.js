@@ -14,7 +14,9 @@ app.use(express.json());
 
 // Routes
 import chatRoutes from './routes/chat.js';
+import conversationRoutes from './routes/conversation.js';
 app.use('/api/chat', chatRoutes);
+app.use('/api/conversations', conversationRoutes);
 
 // Health Check for Render
 app.get('/health', (req, res) => {
