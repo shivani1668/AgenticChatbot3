@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5000/api').replace(/\/$/, '');
 
 const useChatStore = create((set, get) => ({
   conversations: [],
@@ -44,6 +44,7 @@ const useChatStore = create((set, get) => ({
       return newConv._id;
     } catch (err) {
       console.error('Create conversation error:', err);
+      return null;
     }
   },
 
