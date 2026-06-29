@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Menu, Sparkles, User, MoreHorizontal, Terminal } from 'lucide-react';
+import { Send, Menu, Sparkles, User, MoreHorizontal, Terminal, Plus } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import useChatStore from '../store/useChatStore';
 import { useParams } from 'react-router-dom';
@@ -16,6 +16,7 @@ const ChatWindow = () => {
     setSidebarOpen,
     activeConversationId,
     selectConversation,
+    createConversation, // Added for the center button
     conversations,
     isDarkMode
   } = useChatStore();
@@ -39,6 +40,10 @@ const ChatWindow = () => {
     const text = input;
     setInput('');
     await sendMessage(text);
+  };
+
+  const handleNewChatInCenter = async () => {
+    await createConversation();
   };
 
   const groupMessagesByDate = () => {
@@ -65,12 +70,9 @@ const ChatWindow = () => {
 
   const displayItems = groupMessagesByDate();
 
-  // THE PROBLEM: The menu button was inside the logic for activeConversationId.
-  // We need to show the menu button ALWAYS so people can open the sidebar on mobile.
-
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-      {/* Mobile Menu Button - FIXED: Now always visible on mobile */}
+      {/* Mobile Menu Button */}
       {!activeConversationId && (
         <button
           onClick={() => setSidebarOpen(true)}
@@ -86,9 +88,18 @@ const ChatWindow = () => {
             <Terminal size={40} />
           </div>
           <h2 className="text-3xl font-black mb-4">Welcome to Allen CHAT</h2>
-          <p className="text-slate-500 max-w-md leading-relaxed">
-            Tap the menu icon or select a conversation from the sidebar to begin.
+          <p className="text-slate-500 max-w-md leading-relaxed mb-8">
+            Select a conversation from the sidebar or start a new one to begin.
           </p>
+
+          {/* CENTER NEW CHAT BUTTON */}
+          <button
+            onClick={handleNewChatInCenter}
+            className="flex items-center gap-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-xl hover:scale-105 active:scale-95"
+          >
+            <Plus size={24} />
+            <span>Start New Chat</span>
+          </button>
         </div>
       ) : (
         <>
@@ -152,7 +163,8 @@ const ChatWindow = () => {
                     {item.content}
                   </div>
 
-                  <span className="text-[9px] text-slate-500 font-medium px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* VISIBLE TIMESTAMP */}
+                  <span className="text-[9px] text-slate-500 font-medium px-1 opacity-100">
                     {format(new Date(item.createdAt), 'hh:mm a')}
                   </span>
                 </div>
