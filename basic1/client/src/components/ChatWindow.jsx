@@ -2,22 +2,33 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Menu, Sparkles, User, MoreHorizontal, Terminal } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import useChatStore from '../store/useChatStore';
+import { useParams } from 'react-router-dom';
 import clsx from 'clsx';
 
 const ChatWindow = () => {
   const [input, setInput] = useState('');
+  const { id } = useParams(); // FIXED: ChatWindow is inside a Route, so it CAN see the ID
+
   const {
     messages,
     sendMessage,
     isLoading,
     setSidebarOpen,
     activeConversationId,
+    selectConversation,
     conversations,
     isDarkMode
   } = useChatStore();
 
   const scrollRef = useRef(null);
   const activeChat = conversations.find(c => c._id === activeConversationId);
+
+  // FIXED: Load the conversation if the ID in the URL changes
+  useEffect(() => {
+    if (id && id !== activeConversationId) {
+      selectConversation(id);
+    }
+  }, [id, activeConversationId, selectConversation]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -55,7 +66,7 @@ const ChatWindow = () => {
 
   const displayItems = groupMessagesByDate();
 
-  if (!activeConversationId) {
+  if (!activeConversationId && !isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-500">
         <div className="w-20 h-20 bg-purple-600 rounded-2xl flex items-center justify-center text-white shadow-2xl mb-8 animate-bounce">
