@@ -11,14 +11,11 @@ const Sidebar = () => {
     activeConversationId,
     fetchConversations,
     createConversation,
-    selectConversation,
-    deleteConversation,
-    renameConversation,
     sidebarOpen,
     setSidebarOpen,
     isDarkMode,
-    isLoading, // Added isLoading to fix ReferenceError
     toggleDarkMode,
+    isLoading, // Destructured correctly
     setRightPanelOpen
   } = useChatStore();
 
@@ -26,17 +23,10 @@ const Sidebar = () => {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const navigate = useNavigate();
-  const { id } = useParams();
 
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
-
-  useEffect(() => {
-    if (id && id !== activeConversationId) {
-      selectConversation(id);
-    }
-  }, [id, activeConversationId, selectConversation]);
 
   const handleNewChat = async () => {
     const newId = await createConversation();
@@ -65,8 +55,9 @@ const Sidebar = () => {
   const handleDelete = async (e, id) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this conversation?')) {
+      const { deleteConversation, activeConversationId } = useChatStore.getState();
       await deleteConversation(id);
-      if (activeConversationId === id) navigate('/');
+      if (activeConversationId === id || !activeConversationId) navigate('/');
     }
   };
 
@@ -84,6 +75,8 @@ const Sidebar = () => {
 
     filteredConversations.forEach(conv => {
       const date = new Date(conv.updatedAt || conv.createdAt);
+      if (isNaN(date.getTime())) return; // Skip invalid dates
+
       if (isToday(date)) groups.Today.push(conv);
       else if (isYesterday(date)) groups.Yesterday.push(conv);
       else if (isAfter(date, subDays(new Date(), 7))) groups['Last 7 Days'].push(conv);
@@ -147,14 +140,14 @@ const Sidebar = () => {
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto px-2 space-y-6 scrollbar-thin scrollbar-thumb-slate-700">
-          {isLoading && (
+          {(isLoading && conversations.length === 0) && (
             <div className="space-y-3 px-3">
               {[1, 2, 3].map(i => (
                 <div key={i} className="h-10 w-full bg-slate-800 animate-pulse rounded-lg" />
               ))}
             </div>
           )}
-          {!isLoading && Object.entries(groups).map(([label, items]) => items.length > 0 && (
+          {Object.entries(groups).map(([label, items]) => items.length > 0 && (
             <div key={label}>
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-3 mb-2">{label}</h3>
               <div className="space-y-1">
